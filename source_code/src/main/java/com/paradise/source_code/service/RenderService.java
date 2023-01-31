@@ -18,7 +18,7 @@ public class RenderService {
 
     private static final Pattern REGEX_PATTERN = Pattern.compile("(\\d+)");
 
-    private static final String L_BR = "<br>";
+    private static final String L_BR = "<bra>";
     private static final String R_BR = "</br>";
 
     public String render(String textKey) {
