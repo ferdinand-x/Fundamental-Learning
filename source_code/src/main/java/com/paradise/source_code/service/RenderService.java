@@ -1,13 +1,12 @@
 package com.paradise.source_code.service;
 
 import com.paradise.source_code.dao.TextDao;
+import com.paradise.source_code.pojo.bo.RenderBO;
+import com.paradise.source_code.process.PostContext;
+import com.paradise.source_code.process.PostProcessorContainer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Service
 @Slf4j
@@ -15,26 +14,20 @@ import java.util.regex.Pattern;
 public class RenderService {
 
     private final TextDao textDao;
+    private final PostProcessorContainer<RenderBO> processContainer;
 
-    private static final Pattern REGEX_PATTERN = Pattern.compile("(\\d+)");
+    public String render(RenderBO renderBO) {
 
-    private static final String L_BR = "<bra>";
-    private static final String R_BR = "</br>";
+        PostContext<RenderBO> postContext = new PostContext<>(renderBO);
 
-    public String render(String textKey) {
-        String text = this.textDao.getTextFromDB(textKey);
-        return this.convertText(text,L_BR,R_BR);
+        boolean isContinue = this.processContainer.handleBefore(postContext);
+        if (!isContinue) {
+            return renderBO.getText();
+        }
+        String text = this.textDao.getTextFromDB(renderBO.getTextKey());
+        renderBO.setText(text);
+        this.processContainer.handleAfter(postContext);
+        return renderBO.getText();
     }
 
-    private String convertText(String text, String pre, String suf) {
-        if (!StringUtils.hasText(text)) {
-            return null;
-        }
-        Matcher matcher = REGEX_PATTERN.matcher(text);
-        while (matcher.find()) {
-            String result = matcher.group(1);
-            text = text.replace(result, pre + result.strip() + suf);
-        }
-        return text;
-    }
 }
