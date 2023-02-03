@@ -7,5 +7,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public class UserInfo {
 
-    private boolean authMark;
+    private boolean groupA;
+    private boolean groupB;
+    private boolean whiteList;
 }

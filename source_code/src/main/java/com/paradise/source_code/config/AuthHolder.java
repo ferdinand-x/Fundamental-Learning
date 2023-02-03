@@ -9,14 +9,14 @@ import org.springframework.stereotype.Component;
 public class AuthHolder {
 
     public boolean authGroupA(UserInfo loginUser){
-        return loginUser.isAuthMark();
+        return loginUser.isGroupA();
     }
 
     public boolean authGroupB(UserInfo loginUser){
-        return loginUser.isAuthMark();
+        return loginUser.isGroupB();
     }
 
     public boolean authWhiteList(UserInfo loginUser){
-        return loginUser.isAuthMark();
+        return loginUser.isWhiteList();
     }
 }

@@ -46,12 +46,12 @@ public class PostProcessorContainer<T> {
     public boolean handleBefore(PostContext<T> postContext) {
         Collection<? extends BasePostProcessor> processors = applicationContextHolder.getBeans(BasePostProcessor.class);
         if (CollectionUtils.isEmpty(processors)) {
-            return true;
+            return false;
         }
         processors.stream()
                 .sorted(Comparator.comparingInt(BasePostProcessor::getPriority))
                 .forEach(v -> v.handleBefore(postContext));
-        return false;
+        return true;
     }
 
     @SuppressWarnings("unchecked")
