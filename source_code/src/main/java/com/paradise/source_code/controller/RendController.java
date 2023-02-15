@@ -1,5 +1,6 @@
 package com.paradise.source_code.controller;
 
+import com.paradise.source_code.pojo.bo.HitRateBO;
 import com.paradise.source_code.pojo.bo.RenderBO;
 import com.paradise.source_code.service.RenderService;
 import lombok.RequiredArgsConstructor;
@@ -14,5 +15,10 @@ public class RendController {
     @PostMapping("/render")
     public String render(@RequestBody RenderBO renderBO){
         return this.renderService.render(renderBO);
+    }
+
+    @GetMapping("/hit_rate")
+    public HitRateBO hitRate(){
+        return this.renderService.hitRate();
     }
 }

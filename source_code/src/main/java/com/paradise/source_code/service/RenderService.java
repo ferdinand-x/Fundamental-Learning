@@ -1,13 +1,13 @@
 package com.paradise.source_code.service;
 
 import com.paradise.source_code.dao.TextDao;
+import com.paradise.source_code.pojo.bo.HitRateBO;
 import com.paradise.source_code.pojo.bo.RenderBO;
 import com.paradise.source_code.process.PostContext;
 import com.paradise.source_code.process.PostProcessorContainer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -17,7 +17,8 @@ public class RenderService {
     private final TextDao textDao;
     private final PostProcessorContainer<RenderBO> processContainer;
 
-    @Transactional(rollbackFor = Exception.class)
+    private final HitRateService hitRateService;
+
     public String render(RenderBO renderBO) {
 
         PostContext<RenderBO> postContext = new PostContext<>(renderBO);
@@ -33,4 +34,7 @@ public class RenderService {
         return renderBO.getText();
     }
 
+    public HitRateBO hitRate(){
+        return hitRateService.getHitRate();
+    }
 }

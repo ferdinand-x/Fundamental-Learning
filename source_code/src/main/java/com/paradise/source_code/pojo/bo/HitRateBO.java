@@ -9,5 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Accessors(chain = true)
 public class HitRateBO {
 
-    private AtomicInteger hit;
+    private AtomicInteger totalCall = new AtomicInteger();
+
+    private AtomicInteger cacheHit = new AtomicInteger();
 }
