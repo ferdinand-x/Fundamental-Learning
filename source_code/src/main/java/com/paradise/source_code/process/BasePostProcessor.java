@@ -27,12 +27,4 @@ public interface BasePostProcessor<T> {
 
     }
 
-    /**
-     * obtain the priority for process.
-     *
-     * @return for the high priority with min value will be return.
-     */
-    default int getPriority() {
-        return 0;
-    }
 }

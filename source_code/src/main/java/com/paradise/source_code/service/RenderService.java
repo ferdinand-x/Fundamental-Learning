@@ -7,6 +7,7 @@ import com.paradise.source_code.process.PostProcessorContainer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -16,6 +17,7 @@ public class RenderService {
     private final TextDao textDao;
     private final PostProcessorContainer<RenderBO> processContainer;
 
+    @Transactional(rollbackFor = Exception.class)
     public String render(RenderBO renderBO) {
 
         PostContext<RenderBO> postContext = new PostContext<>(renderBO);
@@ -27,6 +29,7 @@ public class RenderService {
         String text = this.textDao.getTextFromDB(renderBO.getTextKey());
         renderBO.setText(text);
         this.processContainer.handleAfter(postContext);
+
         return renderBO.getText();
     }
 

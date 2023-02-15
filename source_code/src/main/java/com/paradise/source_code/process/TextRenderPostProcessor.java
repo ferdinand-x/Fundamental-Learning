@@ -21,4 +21,5 @@ public interface TextRenderPostProcessor extends BasePostProcessor<RenderBO> {
         }
         return text;
     }
+
 }

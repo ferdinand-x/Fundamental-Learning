@@ -2,6 +2,11 @@ package com.paradise.source_code.oth;
 
 import org.springframework.core.ResolvableType;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.List;
 
@@ -9,8 +14,10 @@ public class GenericClazz {
 
     private HashMap<String, List<Integer>> param;
 
-    public static void main(String[] args) throws NoSuchFieldException {
-        printParmaBySpring();
+    public static void main(String[] args) throws NoSuchFieldException, IOException {
+        Path path = Paths.get("C:\\Users\\GBA\\Downloads\\GVN_MODULE_SQL_CFG_DATA_TABLE.xlsx");
+        Path path1 = Paths.get("C:\\Users\\GBA\\Downloads\\GVN_MODULE_SQL_CFG_DATA_TABLE2.xlsx");
+        Path copy = Files.copy(path, path1, StandardCopyOption.REPLACE_EXISTING);
     }
 
     private static void printParmaBySpring() throws NoSuchFieldException {
