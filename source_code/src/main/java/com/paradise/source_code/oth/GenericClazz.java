@@ -15,9 +15,17 @@ public class GenericClazz {
     private HashMap<String, List<Integer>> param;
 
     public static void main(String[] args) throws NoSuchFieldException, IOException {
+
+        List<String> req_ids = List.of("a", "b", "c");
+        String id_str = String.join(",", req_ids);
+
+        String[] ids = id_str.split(",");
+
+        System.out.println(req_ids);
         Path path = Paths.get("C:\\Users\\GBA\\Downloads\\GVN_MODULE_SQL_CFG_DATA_TABLE.xlsx");
         Path path1 = Paths.get("C:\\Users\\GBA\\Downloads\\GVN_MODULE_SQL_CFG_DATA_TABLE2.xlsx");
         Path copy = Files.copy(path, path1, StandardCopyOption.REPLACE_EXISTING);
+
     }
 
     private static void printParmaBySpring() throws NoSuchFieldException {

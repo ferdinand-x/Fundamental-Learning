@@ -31,7 +31,7 @@ public class CachePostProcessor implements TextRenderPostProcessor {
             // new instance
             .build();
 
-    private HitRateBO hitRate = new HitRateBO();
+    private final HitRateBO hitRate = new HitRateBO();
 
     @Override
     public boolean handleBefore(PostContext<RenderBO> postContext) {
