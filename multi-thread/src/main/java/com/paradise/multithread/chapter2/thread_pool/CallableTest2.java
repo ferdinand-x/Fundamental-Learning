@@ -28,6 +28,7 @@ public class CallableTest2 {
                 .boxed()
                 .map(CallableTest2::callableTask)
                 .collect(Collectors.toList());
+        // 使用invokeAll() 阻塞获取所有线程的执行结果
         Integer accumResult = null;
         try {
             accumResult = threadPool.invokeAll(tasks).stream()
