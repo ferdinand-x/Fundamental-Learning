@@ -25,29 +25,7 @@ public class DateFormatThreadLocal {
     }
 
     public static void main(String[] args) {
-        // Specify the parent directory
-        File parentDir = new File("E:\\gvn\\sql\\verify");
-        // Get all subdirectories
-        File[] subDirs = parentDir.listFiles(File::isDirectory);
-        // Loop through each subdirectory
-        for (File subDir : subDirs) {
-            String text = subDir.getName() +":\n";
-            // Create a new file object with the name problem.txt
-            File file = new File(subDir, "problem.txt");
-            try {
-                // Create the file if it does not exist
-                if (file.createNewFile()) {
-                    System.out.println("File created: " + file.getName());
-                } else {
-                    System.out.println("File already exists.");
-                    FileWriter fileWriter = new FileWriter(file);
-                    fileWriter.write(text);
-                    fileWriter.flush();
-                    fileWriter.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        String property = System.getProperty("user.dir");
+        System.out.println(property);
     }
 }

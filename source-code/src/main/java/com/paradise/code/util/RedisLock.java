@@ -1,6 +1,8 @@
 package com.paradise.code.util;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 
 import java.util.Collections;
 import java.util.UUID;
@@ -21,15 +23,19 @@ public class RedisLock {
     public boolean getLock(final String lockKey) {
         // 生成一个UUID作为值
         String value = UUID.randomUUID().toString();
-        // 尝试执行set命令，并指定nx和ex参数
-        Boolean result = redisTemplate.opsForValue().set(lockKey, value, EXPIRE_TIME, TimeUnit.SECONDS);
-        // 如果返回成功，则表示获取到了锁，并将值存入ThreadLocal变量中
-        if (result != null && result) {
+        boolean result;
+        try {
+            // 尝试执行set命令，并指定nx和ex参数
+            redisTemplate.opsForValue().set(lockKey, value, EXPIRE_TIME, TimeUnit.SECONDS);
+            // 如果返回成功，则表示获取到了锁，并将值存入ThreadLocal变量中
             LOCK_VALUE.set(value);
-            return true;
+            result = true;
+        } catch (Exception e) {
+            // ignore
+            result = false;
         }
         // 否则表示未获取到锁，返回false
-        return false;
+        return result;
     }
 
     // 释放锁
