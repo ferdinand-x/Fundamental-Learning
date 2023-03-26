@@ -1,6 +1,6 @@
 package com.paradise.code.util;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 
@@ -8,10 +8,10 @@ import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+@RequiredArgsConstructor
 public class RedisLock {
     // 创建一个RedisTemplate对象
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     // 定义一个ThreadLocal变量，用于存储每个线程持有的锁标识
     private static final ThreadLocal<String> LOCK_VALUE = new ThreadLocal<>();
