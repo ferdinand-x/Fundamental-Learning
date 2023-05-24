@@ -8,6 +8,9 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * @author ferdinand
+ */
 @Component
 @RequiredArgsConstructor
 public class DistributedLock {
