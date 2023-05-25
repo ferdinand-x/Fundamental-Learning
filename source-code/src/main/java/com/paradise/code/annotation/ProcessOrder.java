@@ -5,6 +5,7 @@ import java.lang.annotation.*;
 /**
  * obtain the priority for process.
  * for the high priority with min value will be return.
+ * @author PARADISE
  */
 @Inherited
 @Target(ElementType.TYPE)

@@ -5,6 +5,9 @@ import lombok.experimental.Accessors;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * @author PARADISE
+ */
 @Data
 @Accessors(chain = true)
 public class HitRateBO {

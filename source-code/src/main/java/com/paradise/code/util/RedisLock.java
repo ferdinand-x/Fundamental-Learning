@@ -1,57 +1,192 @@
 package com.paradise.code.util;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.core.RedisCallback;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.TimeoutUtils;
+import org.springframework.data.redis.serializer.RedisSerializer;
 
-import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-@RequiredArgsConstructor
-public class RedisLock {
-    // 创建一个RedisTemplate对象
-    private final RedisTemplate<String, Object> redisTemplate;
+public  class RedisLock {
 
-    // 定义一个ThreadLocal变量，用于存储每个线程持有的锁标识
-    private static final ThreadLocal<String> LOCK_VALUE = new ThreadLocal<>();
+        private StringRedisTemplate stringRedisTemplate;
 
-    // 定义一个过期时间（秒）
-    private static final long EXPIRE_TIME = 10;
-
-    // 获取锁
-    public boolean getLock(final String lockKey) {
-        // 生成一个UUID作为值
-        String value = UUID.randomUUID().toString();
-        boolean result;
-        try {
-            // 尝试执行set命令，并指定nx和ex参数
-            redisTemplate.opsForValue().set(lockKey, value, EXPIRE_TIME, TimeUnit.SECONDS);
-            // 如果返回成功，则表示获取到了锁，并将值存入ThreadLocal变量中
-            LOCK_VALUE.set(value);
-            result = true;
-        } catch (Exception e) {
-            // ignore
-            result = false;
+        public RedisLock(StringRedisTemplate stringRedisTemplate) {
+            this.stringRedisTemplate = stringRedisTemplate;
         }
-        // 否则表示未获取到锁，返回false
-        return result;
-    }
 
-    // 释放锁
-    public void releaseLock(final String lockKey) {
-        // 获取当前线程持有的值
-        String value = LOCK_VALUE.get();
-        // 如果当前值不为空，则表示当前线程持有了该键
-        if (value != null) {
-            // 定义一个Lua脚本字符串（注意转义字符）
-            String script = "if redis.call(\"get\",KEYS[1]) == ARGV[1] then return redis.call(\"del\",KEYS[1]) else return 0 end";
-            // 使用eval命令执行Lua脚本，并传入键和值作为参数（注意类型转换）
-            Long result = (Long) redisTemplate.execute(new DefaultRedisScript<>(script, Long.class), Collections.singletonList(lockKey), value);
-            // 如果返回结果为1，则表示删除成功，并清除ThreadLocal变量中的值；否则表示删除失败或者已经被其他客户端删除了。
-            if (result != null && result == 1L) {
-                LOCK_VALUE.remove();
+        public RLock newLock(String redisKey) {
+            return new RLock(stringRedisTemplate, redisKey, UUID.randomUUID().toString());
+        }
+
+        private static class LockStatus {
+
+            private boolean lock;
+            private long ttl;
+
+            public boolean isLock() {
+                return lock;
+            }
+
+            public long getTtl() {
+                return ttl;
+            }
+
+            public LockStatus(boolean lock, long ttl) {
+                this.lock = lock;
+                this.ttl = ttl;
+            }
+        }
+
+        public static class RLock {
+
+            private static String UNLOCK = "unlock";
+
+            private StringRedisTemplate stringRedisTemplate;
+            private String redisKey;
+            private String lockId;
+
+            public RLock(StringRedisTemplate stringRedisTemplate, String redisKey, String lockId) {
+                this.stringRedisTemplate = stringRedisTemplate;
+                this.redisKey = redisKey;
+                this.lockId = lockId;
+            }
+
+            public void lock(long lockTimeout, TimeUnit unit) {
+                stringRedisTemplate.execute(new RedisCallback<Void>() {
+                    @Override
+                    public Void doInRedis(RedisConnection connection) throws DataAccessException {
+                        CompletableFuture future = new CompletableFuture();
+                        RedisSerializer<String> keySerializer = (RedisSerializer<String>) stringRedisTemplate.getKeySerializer();
+                        byte[] key = keySerializer.serialize(redisKey);
+                        //订阅锁释放消息
+                        connection.subscribe((message, pattern) -> {
+                            String msg = new String(message.getBody());
+                            if (UNLOCK.equals(msg)) {
+                                future.complete(message);
+                            }
+                        }, key);
+                        //tryLock
+                        LockStatus lockStatus;
+                        do {
+                            lockStatus = _tryLock(lockTimeout, unit);
+                            if (!lockStatus.isLock()) {
+                                try {
+                                    future.get(lockStatus.getTtl(), TimeUnit.MILLISECONDS);
+                                } catch (ExecutionException e) {
+                                    throw new RuntimeException(e.getMessage(), e);
+                                } catch (InterruptedException e) {
+                                    Thread.currentThread().interrupt();
+                                } catch (TimeoutException ignored) {
+                                }
+                            }
+                        } while (!lockStatus.isLock());
+                        return null;
+                    }
+                });
+            }
+
+            public boolean tryLock(long lockTimeout, TimeUnit unit) {
+                LockStatus lockStatus = _tryLock(lockTimeout, unit);
+                return lockStatus.isLock();
+            }
+
+            public LockStatus _tryLock(long lockTimeout, TimeUnit unit) {
+                LockStatus lock = stringRedisTemplate.execute(new RedisCallback<LockStatus>() {
+                    @Override
+                    public LockStatus doInRedis(RedisConnection connection) throws DataAccessException {
+                        RedisSerializer<String> keySerializer = (RedisSerializer<String>) stringRedisTemplate.getKeySerializer();
+                        RedisSerializer<String> valueSerializer = (RedisSerializer<String>) stringRedisTemplate.getValueSerializer();
+                        byte[] key = keySerializer.serialize(redisKey);
+                        long ttl = TimeoutUtils.toMillis(lockTimeout, unit);
+                        long expireTime = System.currentTimeMillis() + ttl;
+                        byte[] value = valueSerializer.serialize(String.format("%s:%s", lockId, expireTime));
+                        String data;
+                        do {
+                            byte[] bytes = connection.get(key);
+                            data = valueSerializer.deserialize(bytes);
+                            if (null == data) {
+                                //setNX将key的值设为value，当且仅当key不存在。
+                                //若给定的key已经存在，则SETNX不做任何动作。
+                                Boolean ret = connection.setNX(key, value);
+                                if (!ret) {
+                                    continue;
+                                }
+                                //获取锁成功
+                                return new LockStatus(true, ttl);
+                            }
+                        } while (null == data);
+                        return new LockStatus(false, getTTL(data));
+                    }
+                });
+                return lock;
+            }
+
+            private long getTTL(String data) {
+                String[] split = data.split(":");
+                Long expireTime = Long.parseLong(split[1]);
+                long ttl = expireTime - System.currentTimeMillis();
+                return ttl;
+            }
+
+            private String getLockId(String data) {
+                String[] split = data.split(":");
+                String lockId = split[0];
+                return lockId;
+            }
+
+            public void unlock() {
+                stringRedisTemplate.execute(new RedisCallback<Void>() {
+                    @Override
+                    public Void doInRedis(RedisConnection connection) throws DataAccessException {
+                        RedisSerializer<String> keySerializer = (RedisSerializer<String>) stringRedisTemplate.getKeySerializer();
+                        RedisSerializer<String> valueSerializer = (RedisSerializer<String>) stringRedisTemplate.getValueSerializer();
+                        byte[] key = keySerializer.serialize(redisKey);
+                        byte[] value = connection.get(key);
+                        String data = valueSerializer.deserialize(value);
+                        if (null == data) {
+                            //ttl超时。做业务回滚处理
+                            throw new RuntimeException("锁超时");
+                        }
+                        if (getTTL(data) <= 0) {
+                            //ttl超时。做业务回滚处理
+                            throw new RuntimeException("锁超时");
+                        }
+                        if (!lockId.equals(getLockId(data))) {
+                            //lockId不一样，锁被替换。做业务回滚处理
+                            throw new RuntimeException("锁超时");
+                        }
+
+                        //如果在事务执行之前这key被其他命令所改动，那么下面事务将被打断
+                        connection.watch(key);
+                        try {
+                            //标记一个事务块的开始
+                            connection.multi();
+                            //删除key
+                            connection.del(key);
+                            //执行所有事务块内的命令
+                            List<Object> ret = connection.exec();
+                            if (null == ret) {
+                                //watch后被其他命令所改动
+                                throw new RuntimeException("锁超时");
+                            }
+                            byte[] msg = valueSerializer.serialize(UNLOCK);
+                            //发布锁释放消息
+                            connection.publish(key, msg);
+                        } finally {
+                            //取消WATCH命令对key的监视
+                            connection.unwatch();
+                        }
+                        return null;
+                    }
+                });
             }
         }
     }
-}
