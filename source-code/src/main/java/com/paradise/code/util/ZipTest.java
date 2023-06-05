@@ -8,7 +8,10 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 
-public class GsonEleTest {
+/**
+ * @author PARADISE
+ */
+public class ZipTest {
 
     public static void main(String[] args) throws IOException, MimeTypeException {
         Path path = Path.of("C:\\Users\\GBA\\Desktop\\attachment\\TRF-TR-001_JF_20230531122400099\\TRF-TR-001_JF_20230531122400099\\71EA624EC20F4EA2AB521BE6B949182E.zip");
