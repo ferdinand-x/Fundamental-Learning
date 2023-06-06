@@ -5,6 +5,7 @@ import org.apache.tika.mime.MimeTypeException;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 
@@ -14,19 +15,31 @@ import java.nio.file.attribute.BasicFileAttributes;
 public class ZipTest {
 
     public static void main(String[] args) throws IOException, MimeTypeException {
-        Path path = Path.of("C:\\Users\\GBA\\Desktop\\attachment\\TRF-TR-001_JF_20230531122400099\\TRF-TR-001_JF_20230531122400099\\71EA624EC20F4EA2AB521BE6B949182E.zip");
+        Path path = Path.of("C:\\Users\\GBA\\Desktop\\attachment\\TRF-TR-001_JF_20230605101822084\\TRF-TR-001_JF_20230605101822084\\D3B9C9AA03D544ACA7E4D1FD052D3E5D.zip");
+        String resultFile = "result.json";
+        String resultJson = removeZipFile(path, resultFile);
+        System.out.println(resultJson);
+    }
+
+    private static String removeZipFile(Path path, String resultFile) throws IOException {
         File zipFile = path.toFile();
         String strPath = zipFile.getAbsolutePath().replaceAll("\\.[^.]+$", "");
         Path dirPath = Path.of(strPath);
+        // creat temp dir
         if (Files.notExists(dirPath)){
             Files.createDirectory(dirPath);
         }
+        // unzip zip file
         ZipUtil.unzip(zipFile, dirPath.toFile());
-        Files.deleteIfExists(dirPath.resolve("result.json"));
+        // read target file
+        String jsonResult = Files.readString(dirPath.resolve(resultFile), StandardCharsets.UTF_8);
+        // delete target file: result.json
+        Files.deleteIfExists(dirPath.resolve(resultFile));
+        // zip dir to zip file
         File replaceZip = ZipUtil.zip(dirPath.toFile());
         Files.copy(replaceZip.toPath(), path, StandardCopyOption.REPLACE_EXISTING);
-        Path fileTree = Files.walkFileTree(dirPath, new SimpleFileVisitor<>() {
-            // 先去遍历删除文件
+        Files.walkFileTree(dirPath, new SimpleFileVisitor<>() {
+            // delete file ele
             @Override
             public FileVisitResult visitFile(Path file,
                                              BasicFileAttributes attrs) throws IOException {
@@ -34,7 +47,7 @@ public class ZipTest {
                 return FileVisitResult.CONTINUE;
             }
 
-            // 再去遍历删除目录
+            // delete dir ele
             @Override
             public FileVisitResult postVisitDirectory(Path dir,
                                                       IOException exc) throws IOException {
@@ -42,6 +55,9 @@ public class ZipTest {
                 return FileVisitResult.CONTINUE;
             }
         });
+        // remove dir
         Files.deleteIfExists(dirPath);
+        // return json result
+        return jsonResult;
     }
 }
