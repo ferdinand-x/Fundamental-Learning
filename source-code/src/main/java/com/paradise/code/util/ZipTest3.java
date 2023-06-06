@@ -36,14 +36,14 @@ public class ZipTest3 {
                 zos.putNextEntry(entryOut);
                 InputStream is = zipFile.getInputStream(entryIn);
                 byte[] buffer = new byte[1024];
-                int len;
-                while ((len = (is.read(buffer))) > 0) {
+                while (is.read(buffer) > 0) {
                     zos.write(buffer);
                 }
+                is.close();
             }
             zos.closeEntry();
         }
-        // close
+        // close io stream
         zipFile.close();
         zos.close();
         entryIos.close();
