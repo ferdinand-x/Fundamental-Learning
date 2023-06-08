@@ -7,10 +7,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
+/**
+ * @author PARADISE
+ */
 public class ZipTest3 {
 
     public static void main(String[] args) throws IOException {
@@ -53,6 +57,13 @@ public class ZipTest3 {
         return resultJson;
     }
 
+    /**
+     * remove zipEntry from zip file.
+     * @param srcZipPath source zip file.
+     * @param entryName target filename eg:{@code result.json}
+     * @return content from result.json.
+     * @throws IOException file operation error.
+     */
     private static String removeZipEntry2(Path srcZipPath, String entryName) throws IOException {
         Path tempZipPath = srcZipPath.getParent().resolve("temp.zip");
         String resultJson = null;
@@ -60,18 +71,19 @@ public class ZipTest3 {
         try (ZipFile zipFile = new ZipFile(srcZipPath.toFile());
              InputStream entryIos = zipFile.getInputStream(zipFile.getEntry(entryName));
              ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(tempZipPath))) {
-
-            for (Enumeration<? extends ZipEntry> e = zipFile.entries(); e.hasMoreElements(); ) {
-                ZipEntry entryIn = e.nextElement();
-
+            // loop zipEntries
+            Iterator<? extends ZipEntry> iterator = zipFile.entries().asIterator();
+            while (iterator.hasNext()) {
+                ZipEntry entryIn = iterator.next();
+                // read result.json
                 if (entryName.equals(entryIn.getName())) {
                     resultJson = new String(entryIos.readAllBytes(), StandardCharsets.UTF_8);
                     continue;
                 }
-
+                // out entry
                 ZipEntry entryOut = new ZipEntry(entryIn.getName());
                 zos.putNextEntry(entryOut);
-
+                // write to tem.zip
                 try (InputStream is = zipFile.getInputStream(entryIn)) {
                     byte[] buffer = new byte[1024];
                     int bytesRead;
@@ -79,11 +91,11 @@ public class ZipTest3 {
                         zos.write(buffer, 0, bytesRead);
                     }
                 }
-
+                // write end. close entry.
                 zos.closeEntry();
             }
         }
-
+        // overwrite source zip file.
         Files.move(tempZipPath, srcZipPath, StandardCopyOption.REPLACE_EXISTING);
         return resultJson;
     }
