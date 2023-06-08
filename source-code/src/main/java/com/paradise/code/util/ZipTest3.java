@@ -80,7 +80,7 @@ public class ZipTest3 {
                     resultJson = new String(entryIos.readAllBytes(), StandardCharsets.UTF_8);
                     continue;
                 }
-                // out entry
+                // outEntry
                 ZipEntry entryOut = new ZipEntry(entryIn.getName());
                 zos.putNextEntry(entryOut);
                 // write to tem.zip
