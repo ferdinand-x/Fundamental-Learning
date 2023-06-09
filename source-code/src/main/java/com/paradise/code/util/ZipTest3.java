@@ -7,16 +7,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
+/**
+ * @author PARADISE
+ */
 public class ZipTest3 {
 
     public static void main(String[] args) throws IOException {
-        Path srcZipPath = Path.of("C:\\Users\\GBA\\Desktop\\attachment\\TRF-TR-001_JF_20230605101822084\\TRF-TR-001_JF_20230605101822084\\D3B9C9AA03D544ACA7E4D1FD052D3E5D.zip");
+        Path srcZipPath = Path.of("C:\\Users\\PARADISE\\Desktop\\zip-test\\TRF-TR-001_JF_20230602131910339\\TRF-TR-001_JF_20230602131910339\\3C08E66A7E1947A69F6C2D52C0FEFEA8.zip");
         String resultFile = "result.json";
-        String resultJson = removeZipEntry(srcZipPath, resultFile);
+        String resultJson = removeZipEntry2(srcZipPath, resultFile);
         System.out.println(resultJson);
     }
 
@@ -49,9 +53,51 @@ public class ZipTest3 {
         entryIos.close();
 
         // overwrite source zip file
-        Files.copy(tempZipPath, srcZipPath, StandardCopyOption.REPLACE_EXISTING);
-        // delete temp zip file
-        Files.deleteIfExists(tempZipPath);
+        Files.move(tempZipPath, srcZipPath, StandardCopyOption.REPLACE_EXISTING);
         return resultJson;
     }
+
+    /**
+     * remove zipEntry from zip file.
+     * @param srcZipPath source zip file.
+     * @param entryName target filename eg:{@code result.json}
+     * @return content from result.json.
+     * @throws IOException file operation error.
+     */
+    private static String removeZipEntry2(Path srcZipPath, String entryName) throws IOException {
+        Path tempZipPath = srcZipPath.getParent().resolve("temp.zip");
+        String resultJson = null;
+
+        try (ZipFile zipFile = new ZipFile(srcZipPath.toFile());
+             InputStream entryIos = zipFile.getInputStream(zipFile.getEntry(entryName));
+             ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(tempZipPath))) {
+            // loop zipEntries
+            Iterator<? extends ZipEntry> iterator = zipFile.entries().asIterator();
+            while (iterator.hasNext()) {
+                ZipEntry entryIn = iterator.next();
+                // read result.json
+                if (entryName.equals(entryIn.getName())) {
+                    resultJson = new String(entryIos.readAllBytes(), StandardCharsets.UTF_8);
+                    continue;
+                }
+                // outEntry
+                ZipEntry entryOut = new ZipEntry(entryIn.getName());
+                zos.putNextEntry(entryOut);
+                // write to tem.zip
+                try (InputStream is = zipFile.getInputStream(entryIn)) {
+                    byte[] buffer = new byte[1024];
+                    int bytesRead;
+                    while ((bytesRead = is.read(buffer)) != -1) {
+                        zos.write(buffer, 0, bytesRead);
+                    }
+                }
+                // write end. close entry.
+                zos.closeEntry();
+            }
+        }
+        // overwrite source zip file.
+        Files.move(tempZipPath, srcZipPath, StandardCopyOption.REPLACE_EXISTING);
+        return resultJson;
+    }
+
 }
