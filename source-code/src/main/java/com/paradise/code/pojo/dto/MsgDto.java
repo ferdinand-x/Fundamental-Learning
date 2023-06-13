@@ -26,6 +26,8 @@ public class MsgDto {
     private String zipFileName;
     private List<Source> sources;
 
+    private  static  final UnaryOperator<String> OPERATOR = mimeType -> mimeType.split("/", 2)[1];
+
     @Data
     public static class Source {
         private String sourceId;
@@ -38,11 +40,10 @@ public class MsgDto {
             if (CollectionUtils.isEmpty(this.fieldValues)) {
                 return "";
             }
-            UnaryOperator<String> operator = mimiType -> mimiType.split("/", 2)[1];
             String extKey = "EXTN";
             return this.fieldValues.stream()
                     .filter(attribute -> extKey.equals(attribute.getName()))
-                    .findAny().map(attribute -> operator.apply(attribute.getValue())).orElse("");
+                    .findAny().map(attribute -> OPERATOR.apply(attribute.getValue())).orElse("");
         }
 
         @Data
