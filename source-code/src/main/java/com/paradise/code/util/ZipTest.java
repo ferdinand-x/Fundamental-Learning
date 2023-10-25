@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.List;
 
 /**
  * @author PARADISE
@@ -15,10 +16,11 @@ import java.nio.file.attribute.BasicFileAttributes;
 public class ZipTest {
 
     public static void main(String[] args) throws IOException, MimeTypeException {
-        Path path = Path.of("C:\\Users\\GBA\\Desktop\\attachment\\TRF-TR-001_JF_20230605101822084\\TRF-TR-001_JF_20230605101822084\\D3B9C9AA03D544ACA7E4D1FD052D3E5D.zip");
+        Path path = Path.of("C:\\Users\\GBA\\Desktop\\attachment\\TRF-TR-001_JF_20230606181614668\\TRF-TR-001_JF_20230606181614668.zip");
         String resultFile = "result.json";
-        String resultJson = removeZipFile(path, resultFile);
-        System.out.println(resultJson);
+//        String resultJson = removeZipFile(path, resultFile);
+        List<String> subFiles = ZipUtil.listZip(path.toFile());
+        System.out.println(subFiles);
     }
 
     private static String removeZipFile(Path path, String resultFile) throws IOException {
